@@ -117,4 +117,17 @@ class Vector:
             [-sin(c)*cos(b)*cos(a) - cos(c)*sin(a), -sin(c)*cos(b)*sin(a) + cos(c)*cos(a), sin(c)*sin(b)],
             [sin(b)*cos(a), sin(b)*sin(a), cos(b)]
         ])
-        V = np.matmul(
+        V = np.matmul(np.array([self.x, self.y, self.z]), R)
+        if inplace == True:
+            self = Vector(x=V[0], y=V[1], z=V[2])
+        return Vector(x=V[0], y=V[1], z=V[2])
+    
+class Angle:
+    # x = rotation in the xy plane
+    # y = rotation around the y axis (positive is left)
+    # z = bank (positive is left)
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+    
