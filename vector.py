@@ -82,6 +82,31 @@ class Vector:
         v = self.normalise()
         normal = B.normalise()
         return v.subtractVector(normal.scaleByLength(2 * v.dotProduct(normal))).normalise()
+    
+    def refractInVector(self, B, r_index_a, r_index_b):
+
+        # https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
+
+        v = self.normalise()
+        normal = B.normalise()
+        
+        n = r_index_a / r_index_b
+
+        cosI = v.dotProduct(normal)
+        if cosI < -1:
+            cosI = -1
+        if cosI > 1:
+            cosI = 1
+
+        if cosI < 0:
+            cosI = -cosI
+        
+        k = 1 - n**2 * (1 - cosI**2)
+
+        if k < 0:
+            return False
+
+        return v.scaleByLength(n).addVector(normal.scaleByLength(n * cosI - math.sqrt(k))).normalise()
 
     # perform the dot product between this vector and vector B
     def dotProduct(self, B):
