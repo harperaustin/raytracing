@@ -128,31 +128,4 @@ class Vector:
     # computes a vector that points in same direction but has a length of 1.
     def normalise(self):
         magnitude = self.magnitude()
-        return Vector(x=self.x/magnitude, y=self.y/magnitude, z=self.z/magnitude)
-
-    # multiplies this vector by a matrix
-    def multiplyByMatrix(self, T):
-        return self.fromNpArray(np.matmul(self.toNpArray(), T))
-
-    # rotates the vector by this angle
-    def rotate(self, angle, inplace=False):
-        a, b, c = angle.x, angle.y, angle.z
-        R = np.array([
-            [cos(c)*cos(b)*cos(a) - sin(c)*sin(a), cos(c)*cos(b)*sin(a) + sin(c)*cos(a), -cos(c)*sin(b)],
-            [-sin(c)*cos(b)*cos(a) - cos(c)*sin(a), -sin(c)*cos(b)*sin(a) + cos(c)*cos(a), sin(c)*sin(b)],
-            [sin(b)*cos(a), sin(b)*sin(a), cos(b)]
-        ])
-        V = np.matmul(np.array([self.x, self.y, self.z]), R)
-        if inplace == True:
-            self = Vector(x=V[0], y=V[1], z=V[2])
-        return Vector(x=V[0], y=V[1], z=V[2])
-    
-class Angle:
-    # x = rotation in the xy plane
-    # y = rotation around the y axis (positive is left)
-    # z = bank (positive is left)
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-    
+        return 
