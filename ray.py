@@ -64,4 +64,199 @@ class Intersection():
                         illumination = illumination.addColour(light.relativeStrength(angle_to_light, distance_to_light))
 
         # resolve final total of illumination
-        return background_colour.addColour(self.object.co
+        return background_colour.addColour(self.object.colour.illuminate(illumination))
+
+
+class Ray():
+    def __init__(self, origin, D):
+        self.origin = origin
+        self.D = D.normalise()  # direction in vector
+
+    def sphereDiscriminant(self, sphere, point=0):      # set point to 1 when you want the second intersection
+        # O = self.origin
+        # D = self.D
+        # C = sphere.centre
+        # r = sphere.radius
+        # L = C.subtractVector(O)
+
+        # tca = L.dotProduct(D)
+        # # if tca < 0:     # intersection is behind origin - this doesn't work when line is inside sphere
+        # #    return Intersection()
+
+        # d = None
+        # try:
+        #     d = math.sqrt(L.dotProduct(L) - tca**2)
+        # except:
+        #     d = 0       # crude error protection - in case D & L are too similar
+        # if d > r:       # line misses sphere
+        #     return Intersection()
+
+        # thc = math.sqrt(r**2 - d**2)
+        # t0 = tca - thc      # distance to first intersection
+        # t1 = tca + thc      # distance to second intersection
+
+        # tmin = [t0, t1][point]
+
+        # phit = O.addVector(D.scaleByLength(tmin))     # point of intersection
+        # nhit = phit.subtractVector(C).normalise()     # normal of intersection
+
+        # return Intersection(
+        #     intersects=True,
+        #     distance = tmin,
+        #     point = phit,
+        #     normal = nhit,
+        #     object = sphere
+        # )
+        O = self.origin
+        D = self.D
+        C = sphere.centre
+        r = sphere.radius
+
+        L = C.subtractVector(O)
+        tca = L.dotProduct(D)
+        
+        d2 = L.dotProduct(L) - tca*tca
+        if d2 > r*r:
+            return Intersection()
+
+        thc = math.sqrt(max(0, r*r - d2))
+        t0 = tca - thc
+        t1 = tca + thc
+
+        # pick smallest positive t
+        t = None
+        if t0 > 1e-6:
+            t = t0
+        elif t1 > 1e-6:
+            t = t1
+        else:
+            return Intersection()
+
+        phit = O.addVector(D.scaleByLength(t))
+        nhit = phit.subtractVector(C).normalise()
+        return Intersection(True, t, phit, nhit, sphere)
+
+    def sphereExitRay(self, sphere, intersection):
+
+        # refract at first intersection
+        refracted_ray_D = self.D.refractInVector(intersection.normal, 1, sphere.material.refractive_index)
+
+        # get internal ray
+        internal_ray = Ray(
+            origin=intersection.point,
+            D=refracted_ray_D
+        )
+
+        # get second intersection
+        exit_intersection = internal_ray.sphereDiscriminant(sphere=sphere, point=1)
+
+        exit_ray_D = None
+        exit = False
+
+        n = 0
+        while (exit == False) & (n < 10):
+            n+=1
+
+            # refract exit ray
+            exit_ray_D = refracted_ray_D.refractInVector(exit_intersection.normal.invert(), sphere.material.refractive_index, 1)
+
+            if exit_ray_D != False:
+                exit = True
+            else:
+                # TIR
+                refracted_ray_D = refracted_ray_D.reflectInVector(exit_intersection.normal)
+                # find next exit point
+                exit_ray = Ray(
+                    origin=exit_intersection.point,
+                    D=refracted_ray_D
+                )
+                exit_intersection = exit_ray.sphereDiscriminant(sphere=sphere, point=1)
+            
+        if exit == True:
+
+            return Ray(
+                exit_intersection.point,
+                exit_ray_D
+            )
+
+        # TRAPPED RAY:
+        print("TRAPPED RAY:")
+        self.origin.describe()
+        self.D.describe()
+
+        return None
+
+
+    def nearestSphereIntersect(self, spheres, suppress_ids=[], bounces=0, max_bounces=1, through_count=0):
+
+        intersections = []
+
+        for i, sphere in enumerate(spheres):
+            if sphere.id not in suppress_ids:
+                intersections.append(self.sphereDiscriminant(sphere))
+
+        nearestIntersection = Intersection.nearestIntersection(intersections)
+        #print("nearest:", nearestIntersection)
+        
+        if nearestIntersection == None:
+            return None
+
+        if bounces > max_bounces:
+            return None
+
+        nearestIntersection.bounces = bounces
+        nearestIntersection.through_count = through_count
+
+        # NB - reflective objects return background colour if no reflections found
+        if nearestIntersection.object.material.reflective == True:
+            reflected_ray_D = self.D.reflectInVector(nearestIntersection.normal)
+            
+            reflected_ray = Ray(
+                origin=nearestIntersection.point,
+                D=reflected_ray_D
+            )
+            bounces += 1
+            suppress_ids = [nearestIntersection.object.id]
+            reflected_terminus = reflected_ray.nearestSphereIntersect(
+                spheres=spheres,
+                suppress_ids=suppress_ids,
+                bounces=bounces,
+                max_bounces=max_bounces,
+                through_count=through_count
+            )
+
+            if reflected_terminus != None:
+                return reflected_terminus
+            
+            return nearestIntersection
+
+        # REFRACTION
+        if nearestIntersection.object.material.transparent == True:
+
+            sphere_exit_ray = self.sphereExitRay(
+                sphere=nearestIntersection.object,
+                intersection=nearestIntersection
+            )
+
+            if sphere_exit_ray == None:
+                return None
+            
+            bounces += 1
+            through_count += 1
+            suppress_ids = [nearestIntersection.object.id]
+
+            reflected_terminus = sphere_exit_ray.nearestSphereIntersect(
+                spheres=spheres,
+                suppress_ids=suppress_ids,
+                bounces=bounces,
+                max_bounces=max_bounces,
+                through_count=through_count
+            )
+
+            if reflected_terminus != None:
+                return reflected_terminus
+
+            return None
+
+        return nearestIntersection
+
