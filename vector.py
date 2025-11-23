@@ -77,14 +77,17 @@ class Vector:
         return arccos(self.dotProduct(B) / (self.magnitude() * B.magnitude()))
 
 
-    # calculates the reflection vector from A over B. Reflect A over B
+    # calculates the reflection vector from A bouncing off of surface B
     def reflectInVector(self, B):
         v = self.normalise()
         normal = B.normalise()
         return v.subtractVector(normal.scaleByLength(2 * v.dotProduct(normal))).normalise()
     
-    def refractInVector(self, B, r_index_a, r_index_b):
 
+    # calculates the direction a ray will travel when passing through a boundary between 2 different materials
+    def refractInVector(self, B, r_index_a, r_index_b):
+        # refractivity index of a is r_index_a, and same for b
+        # b is the surface that the vector is colliding with
         # https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel.html
 
         v = self.normalise()
@@ -101,7 +104,7 @@ class Vector:
         if cosI < 0:
             cosI = -cosI
         
-        k = 1 - n**2 * (1 - cosI**2)
+        k = 1 - n**2 * (1 - cosI**2) # apply Snell's law here!
 
         if k < 0:
             return False

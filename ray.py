@@ -30,12 +30,11 @@ class Intersection():
         self.bounces = bounces
         self.through_count=through_count
 
-    def directionRGB(self):
-        # ray has not landed on anything, but might get light from light sources
 
-        # test
-        return Colour(0, 255,)
 
+    """
+    Given a ray that hit an object, what is the final color of that pixel considering all light sources?
+    """
     def terminalRGB(self, spheres, background_colour=Colour(0, 0, 0), global_light_sources=[], point_light_sources=[], max_bounces=0):
         # colour of the thing landed on
         reflectivity, transparency, emitivity = self.object.material.reflective, self.object.material.transparent, self.object.material.emitive 
@@ -72,41 +71,12 @@ class Ray():
         self.origin = origin
         self.D = D.normalise()  # direction in vector
 
+
+    """
+    Find where a ray intersects a given sphere
+    """
     def sphereDiscriminant(self, sphere, point=0):      # set point to 1 when you want the second intersection
-        # O = self.origin
-        # D = self.D
-        # C = sphere.centre
-        # r = sphere.radius
-        # L = C.subtractVector(O)
-
-        # tca = L.dotProduct(D)
-        # # if tca < 0:     # intersection is behind origin - this doesn't work when line is inside sphere
-        # #    return Intersection()
-
-        # d = None
-        # try:
-        #     d = math.sqrt(L.dotProduct(L) - tca**2)
-        # except:
-        #     d = 0       # crude error protection - in case D & L are too similar
-        # if d > r:       # line misses sphere
-        #     return Intersection()
-
-        # thc = math.sqrt(r**2 - d**2)
-        # t0 = tca - thc      # distance to first intersection
-        # t1 = tca + thc      # distance to second intersection
-
-        # tmin = [t0, t1][point]
-
-        # phit = O.addVector(D.scaleByLength(tmin))     # point of intersection
-        # nhit = phit.subtractVector(C).normalise()     # normal of intersection
-
-        # return Intersection(
-        #     intersects=True,
-        #     distance = tmin,
-        #     point = phit,
-        #     normal = nhit,
-        #     object = sphere
-        # )
+        # ray origin and direction
         O = self.origin
         D = self.D
         C = sphere.centre
@@ -136,6 +106,8 @@ class Ray():
         nhit = phit.subtractVector(C).normalise()
         return Intersection(True, t, phit, nhit, sphere)
 
+
+    # calculates the ray that exits a transparent sphere after traveling through it.
     def sphereExitRay(self, sphere, intersection):
 
         # refract at first intersection
@@ -163,7 +135,7 @@ class Ray():
             if exit_ray_D != False:
                 exit = True
             else:
-                # TIR
+                # Total internal reflection, ray gets trapped inside
                 refracted_ray_D = refracted_ray_D.reflectInVector(exit_intersection.normal)
                 # find next exit point
                 exit_ray = Ray(
@@ -186,7 +158,7 @@ class Ray():
 
         return None
 
-
+    # returns the nearest sphere intersection associated with a ray. Accounts for reflections and refractions.
     def nearestSphereIntersect(self, spheres, suppress_ids=[], bounces=0, max_bounces=1, through_count=0):
 
         intersections = []
@@ -196,7 +168,6 @@ class Ray():
                 intersections.append(self.sphereDiscriminant(sphere))
 
         nearestIntersection = Intersection.nearestIntersection(intersections)
-        #print("nearest:", nearestIntersection)
         
         if nearestIntersection == None:
             return None
@@ -230,7 +201,7 @@ class Ray():
             
             return nearestIntersection
 
-        # REFRACTION
+        # check for refraction
         if nearestIntersection.object.material.transparent == True:
 
             sphere_exit_ray = self.sphereExitRay(
