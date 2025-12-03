@@ -73,7 +73,7 @@ class Ray():
 
 
     """
-    Find where a ray intersects a given sphere
+    Finds where a ray intersects a given sphere
     """
     def sphereDiscriminant(self, sphere, point=0):      # set point to 1 when you want the second intersection
         # ray origin and direction
@@ -81,19 +81,22 @@ class Ray():
         D = self.D
         C = sphere.centre
         r = sphere.radius
+        # given the ray's origin and direction, and the sphere's center and radius, output where they intersect
+        # uses the geometric method.
 
-        L = C.subtractVector(O)
-        tca = L.dotProduct(D)
+        L = C.subtractVector(O) # vector from ray origin to sphere center
+        tca = L.dotProduct(D) # distance to closest approach
         
-        d2 = L.dotProduct(L) - tca*tca
-        if d2 > r*r:
+        d2 = L.dotProduct(L) - tca*tca # distance squared from sphere center to closest approach
+        if d2 > r*r: # no intersection
             return Intersection()
 
+        # two possible intersection points along the ray
         thc = math.sqrt(max(0, r*r - d2))
         t0 = tca - thc
         t1 = tca + thc
 
-        # pick smallest positive t
+        # pick smallest/nearest positive t
         t = None
         if t0 > 1e-6:
             t = t0
@@ -102,7 +105,9 @@ class Ray():
         else:
             return Intersection()
 
+        # phit is the intersection point
         phit = O.addVector(D.scaleByLength(t))
+        # nhit is the normalized surface vector
         nhit = phit.subtractVector(C).normalise()
         return Intersection(True, t, phit, nhit, sphere)
 
